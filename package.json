@@ -1,0 +1,4 @@
+{
+  "name": "FPGA-Monorepo",
+  "packageManager": "yarn@4.9.3"
+}
