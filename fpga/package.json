@@ -6,5 +6,8 @@
   "scripts": {
     "build_platform": "bash scripts/build.sh",
     "deploy": "bash scripts/deploy.sh"
+  },
+  "dependencies": {
+    "@repo/hw_server": "workspace:^"
   }
 }

@@ -4,6 +4,7 @@
   "private": true,
   "description": "The Xilinx hardware server",
   "scripts": {
-    "hw_server": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "build_platform": "bash scripts/deploy.sh"
   }
 }

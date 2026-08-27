@@ -39,6 +39,21 @@ write_hw_platform -fixed -include_bit -force -file $xsa_file
 puts "Copying bitstream into dist/..."
 file copy -force $bit_file $dist_dir
 
+# ps7_init.tcl brings the PS out of reset: PLLs, clocks, MIO and -- critically --
+# the DDR controller. xsdb must source and run it before downloading an ELF that
+# links into DDR, otherwise `dow` fails with "Cannot access DDR: the controller
+# is held in reset". Vivado regenerates it under project_1.gen/ (gitignored), so
+# collect it here alongside the other artifacts.
+puts "Copying ps7_init.tcl into dist/..."
+set ps7_init_glob "$project_dir/project_1.gen/sources_1/bd/*/ip/*_processing_system7_*/ps7_init.tcl"
+set ps7_init_files [glob -nocomplain $ps7_init_glob]
+if {[llength $ps7_init_files] != 1} {
+    error "Expected exactly one ps7_init.tcl matching:\n  $ps7_init_glob\nFound: [llength $ps7_init_files]"
+}
+set ps7_init_file [lindex $ps7_init_files 0]
+file copy -force $ps7_init_file $dist_dir
+
 puts "Build complete. Artifacts in $dist_dir:"
 puts "  Bitstream: $dist_dir/[file tail $bit_file]"
 puts "  XSA:       $xsa_file"
+puts "  PS init:   $dist_dir/ps7_init.tcl"

@@ -13,11 +13,7 @@
         "project_1/project_1.srcs/**",
         "!project_1/project_1.srcs/utils_1/**",
         "!project_1/project_1.srcs/sources_1/bd/*/ui/**"
-      ],
-      "dependsOn": ["hw_server"]
-    },
-    "hw_server": {
-
+      ]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -41,7 +37,7 @@
     "deploy": {
       "cache": false,
       "env": ["VIVADO_ROOT"],
-      "dependsOn": ["@repo/backend#build", "hw_server"]
+      "dependsOn": ["@repo/backend#build"]
     }
   }
 }
