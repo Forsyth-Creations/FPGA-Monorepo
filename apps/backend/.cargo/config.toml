@@ -1,0 +1,11 @@
+[build]
+target = "armv7a-none-eabihf"
+
+[target.armv7a-none-eabihf]
+rustflags = [
+    "-Ctarget-cpu=cortex-a9",
+    "-Ctarget-feature=+vfp3",
+    "-Ctarget-feature=+neon",
+    "-Clink-arg=-Tlink.x",
+    "-Cforce-frame-pointers=yes",  # helps with debugging
+]

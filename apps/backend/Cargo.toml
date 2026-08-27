@@ -1,0 +1,13 @@
+[package]
+name = "backend"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+zynq7000-rt    = "0.2"   # runtime / startup
+zynq7000-hal   = "0.1.1"   # HAL with UART driver
+defmt          = "1.0.1"
+cortex-ar      = { version = "0.3", features = ["critical-section-single-core"] }
+
+[dependencies.defmt-brtt]
+version = "0.1"

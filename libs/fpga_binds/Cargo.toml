@@ -1,0 +1,6 @@
+[package]
+name = "fpga_binds"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

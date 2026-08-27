@@ -1,0 +1,9 @@
+{
+  "name": "@repo/hw_server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Xilinx hardware server",
+  "scripts": {
+    "hw_server": "bash scripts/deploy.sh"
+  }
+}

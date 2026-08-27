@@ -1,4 +1,19 @@
 {
-  "name": "FPGA-Monorepo",
-  "packageManager": "yarn@4.9.3"
+  "name": "fpga-monorepo",
+  "private": true,
+  "packageManager": "yarn@4.9.3",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "fpga"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "deploy": "turbo deploy --concurrency=1"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  }
 }

@@ -1,0 +1,27 @@
+# Vivado writes these next to wherever it was launched.
+*.log
+*.jou
+*.str
+.Xil/
+
+# Build artifacts collected by scripts/build.tcl.
+/dist/
+
+# Vivado project working directories. Everything here is regenerated from
+# project_1.srcs + project_1.xpr, and it is rewritten on every build -- keeping
+# it out of git also keeps it out of Turborepo's file hashing.
+/project_1/project_1.cache/
+/project_1/project_1.gen/
+/project_1/project_1.hw/
+/project_1/project_1.ip_user_files/
+/project_1/project_1.runs/
+/project_1/project_1.sim/
+/project_1/design_1_wrapper.xsa
+
+# Auto-incremental synthesis checkpoint. Lives under .srcs but is an output:
+# Vivado rewrites it at the end of every synth_1 run.
+/project_1/project_1.srcs/utils_1/
+
+# Block design GUI canvas layout -- changes when you move blocks around in the
+# IP integrator, never affects the generated hardware.
+/project_1/project_1.srcs/sources_1/bd/*/ui/

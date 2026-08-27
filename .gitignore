@@ -15,3 +15,12 @@ node_modules
 
 #!.yarn/cache
 .pnp.*
+
+# Machine-specific environment (copy from .env.example)
+.env
+
+# Turborepo local task cache
+.turbo
+
+# Cargo build output (workspace-level)
+/target

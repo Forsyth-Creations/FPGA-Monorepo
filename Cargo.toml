@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["apps/backend",
+    "libs/fpga_binds", 
+    "libs/register_definitions"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"

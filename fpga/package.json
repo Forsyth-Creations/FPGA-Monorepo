@@ -1,0 +1,10 @@
+{
+  "name": "@repo/fpga",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FPGA bitstream and platform build (Vivado/Vitis)",
+  "scripts": {
+    "build_platform": "bash scripts/build.sh",
+    "deploy": "bash scripts/deploy.sh"
+  }
+}
