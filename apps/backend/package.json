@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "build": "cargo build --release",
-    "deploy": "bash scripts/deploy.sh",
     "dev": "cargo watch -x run",
     "lint": "cargo clippy"
   }

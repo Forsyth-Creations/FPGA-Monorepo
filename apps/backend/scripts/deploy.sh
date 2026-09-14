@@ -19,12 +19,12 @@ fi
 # ps7_init.tcl is the Vivado-generated register sequence that brings them up;
 # without running it, `dow` dies with:
 #   Memory write error at 0x100000. Cannot access DDR: the controller is held in reset
-# Prefer the copy collected by build_platform, fall back to Vivado's generated
-# tree so a bitstream built in the GUI still deploys.
+# Prefer the copy collected by build_platform, fall back to the generated
+# build/ tree.
 PS7_INIT=""
 for candidate in \
     "$REPO_ROOT/fpga/dist/ps7_init.tcl" \
-    "$REPO_ROOT"/fpga/project_1/project_1.gen/sources_1/bd/*/ip/*_processing_system7_*/ps7_init.tcl
+    "$REPO_ROOT"/fpga/build/project_1.gen/sources_1/bd/*/ip/*_processing_system7_*/ps7_init.tcl
 do
     if [[ -f "$candidate" ]]; then
         PS7_INIT="$candidate"

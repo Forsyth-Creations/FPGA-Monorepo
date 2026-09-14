@@ -1,6 +1,0 @@
-[package]
-name = "register_definitions"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]

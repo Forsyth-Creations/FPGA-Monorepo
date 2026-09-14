@@ -1,22 +1,40 @@
 {
-  "globalDependencies": [".env"],
+  "globalDependencies": [
+    ".env"
+  ],
   "ui": "tui",
   "tasks": {
-    "build_platform": {
-      "outputs": ["dist/**"],
-      "env": ["VIVADO_ROOT"],
+    "simulate": {
+      "outputs": [],
+      "env": [
+        "VIVADO_ROOT"
+      ],
       "inputs": [
         "package.json",
-        "scripts/build.sh",
-        "scripts/build.tcl",
-        "scripts/xilinx-env.sh",
-        "project_1/project_1.srcs/**",
-        "!project_1/project_1.srcs/utils_1/**",
-        "!project_1/project_1.srcs/sources_1/bd/*/ui/**"
+        "scripts/**",
+        "rtl/**",
+        "sim/**"
+      ]
+    },
+    "build_platform": {
+      "outputs": [
+        "dist/**"
+      ],
+      "env": [
+        "VIVADO_ROOT"
+      ],
+      "inputs": [
+        "package.json",
+        "scripts/**",
+        "rtl/**",
+        "constraints/**",
+        "bd/**"
       ]
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -24,20 +42,30 @@
       ]
     },
     "@repo/backend#build": {
-      "dependsOn": ["@repo/fpga#build_platform"],
-      "outputs": ["target/release/**"]
+      "dependsOn": [
+        "@repo/fpga#build_platform"
+      ],
+      "outputs": [
+        "target/release/**"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "deploy": {
       "cache": false,
-      "env": ["VIVADO_ROOT"],
-      "dependsOn": ["@repo/backend#build"]
+      "env": [
+        "VIVADO_ROOT"
+      ],
+      "dependsOn": [
+        "@repo/backend#build"
+      ]
     }
   }
 }

@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["apps/backend",
-    "libs/fpga_binds", 
-    "libs/register_definitions"
+    "libs/xil_bindings"
 ]
 
 [workspace.package]

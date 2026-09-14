@@ -1,4 +1,4 @@
-/* memory.x — Zybo Z7-10 (Zynq-7010, xc7z010clg400-1)
+/* memory.x — Zybo Z7-20 (Zynq-7020, xc7z020clg400-1)
  *
  * aarch32-rt link.x requires exactly four named regions:
  *   VECTORS, CODE, DATA, STACKS

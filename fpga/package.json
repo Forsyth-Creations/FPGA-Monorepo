@@ -4,10 +4,8 @@
   "private": true,
   "description": "FPGA bitstream and platform build (Vivado/Vitis)",
   "scripts": {
+    "simulate": "bash scripts/sim.sh",
     "build_platform": "bash scripts/build.sh",
     "deploy": "bash scripts/deploy.sh"
-  },
-  "dependencies": {
-    "@repo/hw_server": "workspace:^"
   }
 }

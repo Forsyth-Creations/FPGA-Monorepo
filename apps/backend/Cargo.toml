@@ -4,10 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-zynq7000-rt    = "0.2"   # runtime / startup
-zynq7000-hal   = "0.1.1"   # HAL with UART driver
-defmt          = "1.0.1"
+xil_bindings  = { path = "../../libs/xil_bindings" }
+zynq7000-rt    = "0.2"     # runtime / startup
+zynq7000-hal   = "0.1.1"   # HAL: UART driver and the blocking UART logger
+zynq7000       = "0.1"     # register blocks (MmioGpio / MmioUart handles)
+log            = "0.4"     # logging facade the HAL's UART logger implements
+fugit          = "0.3"     # Hertz, for the PS_CLK frequency
 cortex-ar      = { version = "0.3", features = ["critical-section-single-core"] }
-
-[dependencies.defmt-brtt]
-version = "0.1"
