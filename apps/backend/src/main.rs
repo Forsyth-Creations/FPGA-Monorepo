@@ -6,6 +6,8 @@
 //! * Holding BTN0 shows the PL's free-running counter on the LEDs instead,
 //!   which is a live check that `sysclk` is running in the fabric.
 //! * Every change is logged over the PS UART.
+//! * A rainbow scrolls along the WS2812B strip on Pmod JE; the slide switches
+//!   set its brightness.
 //!
 //! Peripheral base addresses are generated from the block design -- see
 //! `libs/xil_bindings`. Nothing here hardcodes an AXI address.
@@ -34,7 +36,11 @@ use core::panic::PanicInfo;
 use cortex_ar as _;
 use fugit::RateExtU32;
 use log::{LevelFilter, error, info};
-use xil_bindings::{axi_gpio_0, axi_gpio_1, ip::AxiGpio, ip::axi_gpio};
+use xil_bindings::{
+    axi_gpio_0, axi_gpio_1,
+    ip::{AxiGpio, Ws2812, axi_gpio, ws2812},
+    ws2812_ctrl_0,
+};
 use zynq7000_hal::{
     clocks::Clocks,
     gpio::mio::Pins as MioPins,
@@ -51,6 +57,10 @@ use zynq7000_rt as _;
 const PS_CLK_HZ: u32 = 33_333_333;
 
 const BAUD: u32 = 115_200;
+
+/// LEDs on the strip. Sending more than are attached is harmless -- the extra
+/// bits fall off the end of the chain.
+const NUM_LEDS: usize = 64;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -72,6 +82,10 @@ const _: () = assert!(
 const _: () = assert!(
     konst_str_eq(axi_gpio_1::VLNV, axi_gpio::SUPPORTED_VLNV),
     "axi_gpio_1 is not the IP version xil_bindings::ip::axi_gpio was written for"
+);
+const _: () = assert!(
+    konst_str_eq(ws2812_ctrl_0::VLNV, ws2812::SUPPORTED_VLNV),
+    "ws2812_ctrl_0 is not the IP version xil_bindings::ip::ws2812 was written for"
 );
 
 #[zynq7000_rt::entry]
@@ -111,6 +125,8 @@ fn main() -> ! {
     // generated from the block design that bitstream was built from.
     let io = unsafe { AxiGpio::new(axi_gpio_0::BASE) };
     let ui = unsafe { AxiGpio::new(axi_gpio_1::BASE) };
+    // SAFETY: as above.
+    let npx = unsafe { Ws2812::new(ws2812_ctrl_0::BASE) };
 
     // PL liveness. The counter runs off sysclk with its reset tied high, so it
     // advances from configuration onward -- but only at ~7.45 Hz, i.e. once per
@@ -137,6 +153,18 @@ fn main() -> ! {
         info!("counter {start} -> {now} after {reads} reads -- PL clock running");
     }
 
+    // NeoPixel liveness: one read proves the bus, the address decode and the
+    // IP's clock, before any LED behaviour is involved.
+    let id = npx.id();
+    let npx_ok = id == ws2812::ID_VALUE;
+    if npx_ok {
+        info!("ws2812_ctrl_0 ID {id:#010x} (\"NEOP\") -- NeoPixel IP alive");
+        npx.set_led_count(NUM_LEDS as u32);
+    } else {
+        error!("ws2812_ctrl_0 ID {id:#010x}, expected {:#010x} -- not driving the strip", ws2812::ID_VALUE);
+    }
+
+    let mut frame: u32 = 0;
     let mut last = None;
 
     loop {
@@ -156,6 +184,21 @@ fn main() -> ! {
         // is driving the LEDs" from "the register happens to hold that value".
         io.set_channel1(leds);
 
+        // Next rainbow frame whenever the last one has gone out (~450 fps for
+        // 64 LEDs). The hue advances every 4th frame, so one trip round the
+        // wheel takes a couple of seconds.
+        if npx_ok && !npx.is_busy() {
+            let offset = (frame / 4) as u8;
+            let level = (switches as u8) * 16 + 15; // 15..=255, never fully dark
+            for i in 0..NUM_LEDS {
+                let hue = offset.wrapping_add((i * 256 / NUM_LEDS) as u8);
+                let (r, g, b) = wheel(hue);
+                npx.set_pixel(i, dim(r, level), dim(g, level), dim(b, level));
+            }
+            npx.start();
+            frame = frame.wrapping_add(1);
+        }
+
         // The log, unlike the register write, is rate-limited to actual input
         // changes -- a blocking UART write per loop iteration would dominate
         // the loop and flood the terminal.
@@ -164,6 +207,27 @@ fn main() -> ! {
             last = Some((switches, buttons));
         }
     }
+}
+
+/// Colour wheel: 0..=255 walks red -> green -> blue -> red. Integer-only, so it
+/// needs no floating point or libm.
+fn wheel(pos: u8) -> (u8, u8, u8) {
+    match pos {
+        0..=84 => (255 - pos * 3, pos * 3, 0),
+        85..=169 => {
+            let p = pos - 85;
+            (0, 255 - p * 3, p * 3)
+        }
+        _ => {
+            let p = pos - 170;
+            (p * 3, 0, 255 - p * 3)
+        }
+    }
+}
+
+/// Scale a colour channel by a brightness of 0..=255.
+fn dim(c: u8, level: u8) -> u8 {
+    ((c as u16 * level as u16) / 255) as u8
 }
 
 /// `str` equality is not `const` on stable, and this needs to run in a
