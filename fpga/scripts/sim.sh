@@ -46,7 +46,15 @@ cd "$SIM_DIR"
 
 echo "Compiling ${#SOURCES[@]} source file(s)..."
 for f in "${SOURCES[@]}"; do echo "  ${f#$FPGA_DIR/}"; done
-xvlog --relax "${SOURCES[@]}"
+# xvlog parses everything as Verilog-2001 unless told otherwise, and `-sv`
+# applies to a whole invocation. So .v and .sv files are compiled in two passes
+# into the same work library.
+V_SOURCES=(); SV_SOURCES=()
+for f in "${SOURCES[@]}"; do
+    case "$f" in *.sv) SV_SOURCES+=("$f") ;; *) V_SOURCES+=("$f") ;; esac
+done
+[[ ${#V_SOURCES[@]}  -gt 0 ]] && xvlog --relax     "${V_SOURCES[@]}"
+[[ ${#SV_SOURCES[@]} -gt 0 ]] && xvlog --relax -sv "${SV_SOURCES[@]}"
 
 echo "Elaborating $TOP..."
 # The design top must precede -s; xelab otherwise reads the snapshot flag as
