@@ -1,12 +1,10 @@
-// NeoPixel peripheral, Phase 2 wiring: pattern generator -> framebuffer ->
-// frame FSM -> PHY -> pin. Phase 3 replaces the pattern generator with the
-// AXI4-Lite register block and this file with the packaged-IP version.
+// NeoPixel peripheral, Phase 3: the top of the packaged IP
+// (forsyth:ip:ws2812_ctrl:1.0). AXI4-Lite in, one serial pin out.
 //
-// top.v ties rst_n high (see the note there about the PS-derived reset), so
-// nothing would ever reset the FSM and PHY. A 4-bit shift register with an
-// initial value gives them a clean power-on reset instead: Xilinx FPGAs load
-// every flop's initial value at configuration, so `por` starts at 0 and fills
-// with 1s over the first four clocks.
+// Port names follow the s_axi_* convention exactly so that Vivado's IP
+// packager infers the AXI4-Lite interface on its own.
+//
+// Everything runs on s_axi_aclk (sysclk, 125 MHz). There is one clock domain.
 
 `timescale 1 ps / 1 ps
 `default_nettype none
@@ -14,63 +12,105 @@
 module ws2812_top #(
     parameter int CLK_HZ   = 125_000_000,
     parameter int MAX_LEDS = 64,
-    parameter int NUM_LEDS  = 64,
-    parameter int FRAME_DIV = 21     // start a frame every 2**FRAME_DIV clocks
+    parameter int RESET_NS = 300_000
 ) (
-    input  wire        clk,
-    input  wire        rst_n,
-    input  wire  [3:0] sw,
-    output logic       npx_data
+    input  wire         s_axi_aclk,
+    input  wire         s_axi_aresetn,
+    input  wire  [11:0] s_axi_awaddr,
+    input  wire  [2:0]  s_axi_awprot,
+    input  wire         s_axi_awvalid,
+    output logic        s_axi_awready,
+    input  wire  [31:0] s_axi_wdata,
+    input  wire  [3:0]  s_axi_wstrb,
+    input  wire         s_axi_wvalid,
+    output logic        s_axi_wready,
+    output logic [1:0]  s_axi_bresp,
+    output logic        s_axi_bvalid,
+    input  wire         s_axi_bready,
+    input  wire  [11:0] s_axi_araddr,
+    input  wire  [2:0]  s_axi_arprot,
+    input  wire         s_axi_arvalid,
+    output logic        s_axi_arready,
+    output logic [31:0] s_axi_rdata,
+    output logic [1:0]  s_axi_rresp,
+    output logic        s_axi_rvalid,
+    input  wire         s_axi_rready,
+
+    output logic        npx_data
 );
 
     localparam int AW = $clog2(MAX_LEDS);
     localparam int CW = $clog2(MAX_LEDS + 1);
 
-    logic [3:0] por = '0;
-    logic       rst_q_n;
-    always_ff @(posedge clk) por <= {por[2:0], 1'b1};
-    assign rst_q_n = rst_n && por[3];
-
-    logic [AW-1:0] pat_addr, fsm_addr;
-    logic [23:0]   pat_wdata, fsm_rdata;
-    logic          pat_we, start, frame_done, busy;
-    logic [CW-1:0] led_index;
+    logic [AW-1:0] reg_addr, fsm_addr;
+    logic [23:0]   reg_wdata, reg_rdata, fsm_rdata;
+    logic          reg_we;
+    logic          start, soft_rst, busy, frame_done;
+    logic [CW-1:0] led_count, led_index;
     logic          bit_val, bit_valid, bit_ready;
 
-    ws2812_pattern #(
-        .MAX_LEDS  (MAX_LEDS),
-        .NUM_LEDS  (NUM_LEDS),
-        .FRAME_DIV (FRAME_DIV)
-    ) u_pattern (
-        .clk        (clk),
-        .sw         (sw),
-        .frame_done (frame_done),
-        .fb_addr    (pat_addr),
-        .fb_wdata   (pat_wdata),
-        .fb_we      (pat_we),
-        .start      (start)
+    // SOFT_RST drops the FSM and PHY back to idle; the register block itself
+    // is only reset by the bus.
+    logic core_rst_n;
+    assign core_rst_n = s_axi_aresetn && !soft_rst;
+
+    ws2812_axil_regs #(
+        .MAX_LEDS (MAX_LEDS)
+    ) u_regs (
+        .s_axi_aclk    (s_axi_aclk),
+        .s_axi_aresetn (s_axi_aresetn),
+        .s_axi_awaddr  (s_axi_awaddr),
+        .s_axi_awprot  (s_axi_awprot),
+        .s_axi_awvalid (s_axi_awvalid),
+        .s_axi_awready (s_axi_awready),
+        .s_axi_wdata   (s_axi_wdata),
+        .s_axi_wstrb   (s_axi_wstrb),
+        .s_axi_wvalid  (s_axi_wvalid),
+        .s_axi_wready  (s_axi_wready),
+        .s_axi_bresp   (s_axi_bresp),
+        .s_axi_bvalid  (s_axi_bvalid),
+        .s_axi_bready  (s_axi_bready),
+        .s_axi_araddr  (s_axi_araddr),
+        .s_axi_arprot  (s_axi_arprot),
+        .s_axi_arvalid (s_axi_arvalid),
+        .s_axi_arready (s_axi_arready),
+        .s_axi_rdata   (s_axi_rdata),
+        .s_axi_rresp   (s_axi_rresp),
+        .s_axi_rvalid  (s_axi_rvalid),
+        .s_axi_rready  (s_axi_rready),
+        .start         (start),
+        .soft_rst      (soft_rst),
+        .led_count     (led_count),
+        .busy          (busy),
+        .frame_done    (frame_done),
+        .led_index     (led_index),
+        .fb_addr       (reg_addr),
+        .fb_wdata      (reg_wdata),
+        .fb_we         (reg_we),
+        .fb_rdata      (reg_rdata)
     );
 
     ws2812_framebuffer #(
         .MAX_LEDS (MAX_LEDS)
     ) u_fb (
-        .clk     (clk),
-        .a_addr  (pat_addr),
-        .a_wdata (pat_wdata),
-        .a_we    (pat_we),
-        .a_rdata (),
+        .clk     (s_axi_aclk),
+        .a_addr  (reg_addr),
+        .a_wdata (reg_wdata),
+        .a_we    (reg_we),
+        .a_rdata (reg_rdata),
         .b_addr  (fsm_addr),
         .b_rdata (fsm_rdata)
     );
 
     ws2812_frame_fsm #(
         .CLK_HZ   (CLK_HZ),
-        .MAX_LEDS (MAX_LEDS)
+        .MAX_LEDS (MAX_LEDS),
+        .RESET_NS (RESET_NS)
     ) u_fsm (
-        .clk        (clk),
-        .rst_n      (rst_q_n),
+        .clk        (s_axi_aclk),
+        .rst_n      (core_rst_n),
         .start      (start),
-        .led_count  (CW'(NUM_LEDS)),
+        .led_count  (led_count),
         .busy       (busy),
         .frame_done (frame_done),
         .led_index  (led_index),
@@ -84,8 +124,8 @@ module ws2812_top #(
     ws2812_timing #(
         .CLK_HZ (CLK_HZ)
     ) u_phy (
-        .clk       (clk),
-        .rst_n     (rst_q_n),
+        .clk       (s_axi_aclk),
+        .rst_n     (core_rst_n),
         .bit_val   (bit_val),
         .bit_valid (bit_valid),
         .bit_ready (bit_ready),
