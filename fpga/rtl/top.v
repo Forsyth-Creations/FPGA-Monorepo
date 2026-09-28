@@ -4,7 +4,7 @@
 // It owns the physical pins and instantiates two things:
 //
 //   design_1     the block design (fpga/bd/design_1.tcl): PS7, two AXI GPIOs,
-//                interconnect and reset. Regenerated at build time, never
+//                the ws2812_ctrl NeoPixel IP (fpga/ip/), interconnect and reset. Regenerated at build time, never
 //                checked in. Treat it as the chassis.
 //   rtl_counter  our logic, in plain Verilog alongside this file. It free-runs
 //                off sysclk and is readable from the PS over AXI.
@@ -53,7 +53,8 @@ module top (
     inout  wire        FIXED_IO_0_ps_srstb,
     output wire [ 3:0] led,
     input  wire [ 3:0] sw,
-    input  wire [ 3:0] btn
+    input  wire [ 3:0] btn,
+    output wire        npx_data   // WS2812B data, Pmod JE pin 1
 );
 
     // Peripheral reset out of the block design: active low, synchronous to
@@ -99,7 +100,8 @@ module top (
         .led_o               (led_o),
         .count_i             (count),
         .sw_i                (sw),
-        .btn_i               (btn)
+        .btn_i               (btn),
+        .npx_data            (npx_data)
     );
 
     // resetn is NOT wired in here on purpose. It is derived from the PS

@@ -56,6 +56,11 @@ foreach f $constr_files { puts "  [file tail $f]" }
 add_files -norecurse -fileset [get_filesets constrs_1] $constr_files
 
 # --- Block design -------------------------------------------------------------
+# Our own packaged IP (ip/*/component.xml, written by ip/package_*.tcl, which
+# scripts/build.sh runs first). Must be in the catalog before design_1.tcl's
+# IP check runs.
+set_property ip_repo_paths "$fpga_dir/ip" [current_project]
+update_ip_catalog
 puts "Rebuilding block design from [file tail $bd_script]..."
 source $bd_script
 cr_bd_design_1 ""

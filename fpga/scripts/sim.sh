@@ -7,7 +7,8 @@
 #
 # No Vivado project is involved: this compiles rtl/ and sim/ straight into a
 # throwaway work library under sim_build/. It does not need build_platform to
-# have run, and it never touches build/ or dist/.
+# have run, and it never touches build/ or dist/. Packaged IP is simulated
+# straight from its sources in ip/*/src/.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -29,7 +30,7 @@ done
 # Globbed, not listed, for the same reason build.tcl globs: adding a file to
 # rtl/ or sim/ should be the whole of adding a file.
 shopt -s nullglob
-SOURCES=("$FPGA_DIR"/rtl/*.v "$FPGA_DIR"/rtl/*.sv "$FPGA_DIR"/sim/*.v "$FPGA_DIR"/sim/*.sv)
+SOURCES=("$FPGA_DIR"/rtl/*.v "$FPGA_DIR"/rtl/*.sv "$FPGA_DIR"/ip/*/src/*.sv "$FPGA_DIR"/sim/*.v "$FPGA_DIR"/sim/*.sv)
 shopt -u nullglob
 if [[ ${#SOURCES[@]} -eq 0 ]]; then
     echo "sim.sh: no sources found in $FPGA_DIR/rtl or $FPGA_DIR/sim" >&2
@@ -46,7 +47,15 @@ cd "$SIM_DIR"
 
 echo "Compiling ${#SOURCES[@]} source file(s)..."
 for f in "${SOURCES[@]}"; do echo "  ${f#$FPGA_DIR/}"; done
-xvlog --relax "${SOURCES[@]}"
+# xvlog parses everything as Verilog-2001 unless told otherwise, and `-sv`
+# applies to a whole invocation. So .v and .sv files are compiled in two passes
+# into the same work library.
+V_SOURCES=(); SV_SOURCES=()
+for f in "${SOURCES[@]}"; do
+    case "$f" in *.sv) SV_SOURCES+=("$f") ;; *) V_SOURCES+=("$f") ;; esac
+done
+[[ ${#V_SOURCES[@]}  -gt 0 ]] && xvlog --relax     "${V_SOURCES[@]}"
+[[ ${#SV_SOURCES[@]} -gt 0 ]] && xvlog --relax -sv "${SV_SOURCES[@]}"
 
 echo "Elaborating $TOP..."
 # The design top must precede -s; xelab otherwise reads the snapshot flag as

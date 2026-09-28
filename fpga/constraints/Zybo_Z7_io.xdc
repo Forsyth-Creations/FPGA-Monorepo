@@ -30,3 +30,10 @@ set_property -dict { PACKAGE_PIN K18   IOSTANDARD LVCMOS33 } [get_ports { btn[0]
 set_property -dict { PACKAGE_PIN P16   IOSTANDARD LVCMOS33 } [get_ports { btn[1] }]
 set_property -dict { PACKAGE_PIN K19   IOSTANDARD LVCMOS33 } [get_ports { btn[2] }]
 set_property -dict { PACKAGE_PIN Y16   IOSTANDARD LVCMOS33 } [get_ports { btn[3] }]
+
+## NeoPixel data -- ws2812_ctrl_0 in the block design. Pmod JE pin 1 (je[0] in
+## Digilent's master XDC), through a 5 V level shifter to the strip's DIN.
+## Deliberately no timing constraint: WS2812B is self-clocked, so the output
+## has no clock relationship to check and the unconstrained-output warning is
+## expected.
+set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { npx_data }]
